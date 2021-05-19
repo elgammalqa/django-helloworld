@@ -1,0 +1,74 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    image_name: soumyarout80/task_adjust:latest
+
+  tasks:
+    # Create Kubernetes namespace to run adjust task.
+    - name: Create a Service for adjust web server.
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: adjust
+            
+    # Create Kubernetes resources to run adjust task.
+    - name: Create a Deployment
+      k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: django-helloworld
+            namespace: django
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: django-helloworld
+            strategy:
+              rollingUpdate:
+                maxSurge: 25%
+                maxUnavailable: 25%
+              type: RollingUpdate
+            template:
+              metadata:
+                labels:
+                  app: django-helloworld
+              spec:
+                containers:
+                - name: django-helloworld
+                  image: "{{ image_name }}"
+                  resources:
+                    requests:
+                      cpu: 10m
+                      memory: 256Mi
+                    limits:
+                      cpu: 200m
+                      memory: 512Mi
+                  ports:
+                  - containerPort: 80
+                    name: http
+                    protocol: TCP
+
+    - name: Create a Service for adjust web server.
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: django-helloworld
+            namespace: django
+          spec:
+            type: ClusterIP
+            ports:
+            - port: 80
+              targetPort: 80
+            selector:
+              app: django-helloworld

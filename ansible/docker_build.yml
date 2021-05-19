@@ -1,0 +1,14 @@
+---
+- hosts: localhost
+  gather_facts: false
+  become: yes
+  tasks:
+    - name: Build and image and push it to docker hub 
+      docker_image:
+        build:
+          path: ..
+        name: adjust
+        repository: amirelgammal/django-helloworld
+        tag: 0.1
+        push: yes
+        source: build
